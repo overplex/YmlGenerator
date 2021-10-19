@@ -27,7 +27,7 @@ Installation
 Run composer require
 
 ```bash
-composer require bukashk0zzz/yml-generator
+composer require overplex/yml-generator
 ```
 
 
@@ -35,7 +35,7 @@ Or add this to your `composer.json` file:
 
 ```json
 "require": {
-	"bukashk0zzz/yml-generator": "dev-master",
+	"overplex/yml-generator": "dev-master",
 }
 ```
 
@@ -45,84 +45,113 @@ Usage examples
 ```php
 <?php
 
-use Bukashk0zzz\YmlGenerator\Model\Offer\OfferSimple;
+use Bukashk0zzz\YmlGenerator\Model\Offer\OfferParam;use Bukashk0zzz\YmlGenerator\Model\Offer\OfferSimple;
 use Bukashk0zzz\YmlGenerator\Model\Category;
 use Bukashk0zzz\YmlGenerator\Model\Currency;
 use Bukashk0zzz\YmlGenerator\Model\Delivery;
 use Bukashk0zzz\YmlGenerator\Model\ShopInfo;
 use Bukashk0zzz\YmlGenerator\Settings;
 use Bukashk0zzz\YmlGenerator\Generator;
+use Bukashk0zzz\YmlGenerator\Cdata;
 
-$file = tempnam(sys_get_temp_dir(), 'YMLGenerator');
-$settings = (new Settings())
-    ->setOutputFile($file)
+// Create second (unbuffered) connection to database (only for Yii 2)
+$unbufferedDb = new \yii\db\Connection([
+    'dsn' => \Yii::$app->db->dsn,
+    'charset' => \Yii::$app->db->charset,
+    'username' => \Yii::$app->db->username,
+    'password' => \Yii::$app->db->password,
+    'tablePrefix' => \Yii::$app->db->tablePrefix,
+]);
+$unbufferedDb->open();
+$unbufferedDb->pdo->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
+
+// Writing header to yml.xml
+$yml = new Generator((new Settings())
+    ->setOutputFile('yml.xml')
     ->setEncoding('UTF-8')
-;
+);
 
-// Creating ShopInfo object (https://yandex.ru/support/webmaster/goods-prices/technical-requirements.xml#shop)
-$shopInfo = (new ShopInfo())
+// Writing ShopInfo (https://yandex.ru/support/partnermarket/elements/shop.html)
+$yml->addShopInfo((new ShopInfo())
     ->setName('BestShop')
     ->setCompany('Best online seller Inc.')
     ->setUrl('http://www.best.seller.com/')
-;
+);
 
-// Creating currencies array (https://yandex.ru/support/webmaster/goods-prices/technical-requirements.xml#currencies)
-$currencies = [];
-$currencies[] = (new Currency())
+// Writing currencies (https://yandex.ru/support/partnermarket/elements/currencies.html)
+$yml->startCurrencies();
+$yml->addCurrency((new Currency())
     ->setId('USD')
     ->setRate(1)
-;
+);
+$yml->addCurrency((new Currency())
+    ->setId('RUR')
+    ->setRate(1)
+);
+$yml->finishBlock();
 
-// Creating categories array (https://yandex.ru/support/webmaster/goods-prices/technical-requirements.xml#categories)
-$categories = [];
-$categories[] = (new Category())
-    ->setId(1)
-    ->setName($this->faker->name)
-;
+// Writing categories (https://yandex.ru/support/partnermarket/elements/categories.html)
+$yml->startCategories();
+/** @var CategoryModel $category */
+foreach ($this->getCategoriesQuery()->each(50, $unbufferedDb) as $category) {
+    $item = new Category();
+    $item->setId($category->id);
+    $item->setName($this->formatText($category->name));
 
-// Creating offers array (https://yandex.ru/support/webmaster/goods-prices/technical-requirements.xml#offers)
-$offers = [];
-$offers[] = (new OfferSimple())
-    ->setId(12346)
-    ->setAvailable(true)
-    ->setUrl('http://www.best.seller.com/product_page.php?pid=12348')
-    ->setPrice($this->faker->numberBetween(1, 9999))
-    ->setCurrencyId('USD')
-    ->setCategoryId(1)
-    ->setDelivery(false)
-    ->setName('Best product ever')
-;
+    if ($category->parent) {
+        $item->setParentId($category->parent->id);
+    }
 
-// Optional creating deliveries array (https://yandex.ru/support/partnermarket/elements/delivery-options.xml)
-$deliveries = [];
-$deliveries[] = (new Delivery())
+    $yml->addCategory($item);
+    gc_collect_cycles();
+}
+$yml->finishBlock();
+
+// Writing offers (https://yandex.ru/support/partnermarket/offers.html)
+$yml->startOffers();
+/** @var ProductModel $product */
+foreach ($this->getProductsQuery()->each(50, $unbufferedDb) as $product) {
+
+    $offer = new OfferSimple();
+    $offer->setId($product->id);
+    $offer->setUrl($product->getViewAbsoluteUrl());
+    $offer->setName($product->name);
+    $offer->setPrice($product->getPrice());
+    $offer->setOldPrice($product->getOldPrice());
+    $offer->setAvailable($product->in_stock);
+    $offer->setVendorCode($product->articul);
+    $offer->setCurrencyId('RUR');
+    $offer->setWeight($product->weight);
+    $offer->setDimensions($product->depth, $product->width, $product->height);
+    $offer->setDescription(new CData($this->formatDescription($product->text)));
+    $offer->addPicture($product->getMainPhotoAbsoluteUrl());
+
+    if (!empty($manufacturer)) {
+        $offer->addCustomElement('manufacturer', $manufacturer);
+    }
+
+    // Характеристики
+
+    foreach ($product->properties as $value) {
+        $offer->addParam((new OfferParam)->setName($value->property->name)->setValue($value->value));
+    }
+
+    $yml->addOffer($offer);
+    gc_collect_cycles();
+}
+$yml->finishBlock();
+
+// Optional writing deliveries (https://yandex.ru/support/partnermarket/elements/delivery-options.xml)
+$yml->startDeliveries();
+$yml->addDelivery((new Delivery())
     ->setCost(2)
     ->setDays(1)
     ->setOrderBefore(14)
-;
-
-(new Generator($settings))->generate(
-    $shopInfo,
-    $currencies,
-    $categories,
-    $offers,
-    $deliveries
 );
-```
-### Adding custom elements
-if you need additional offers elements in your yml file using method addCustomElement('type','value'). For example:
-```php
-$offers[] = (new OfferSimple())
-    ->setId(12346)
-    ->setAvailable(true)
-    ->setUrl('http://www.best.seller.com/product_page.php?pid=12348')
-    ->setPrice($this->faker->numberBetween(1, 9999))
-    ->setCurrencyId('USD')
-    ->setCategoryId(1)
-    ->setDelivery(false)
-    ->setName('Best product ever')
-    ->addCustomElement('type', 'value')
-;
+$yml->finishBlock();
+
+$yml->finish();
+$unbufferedDb->close();
 ```
 
 Copyright / License

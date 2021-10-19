@@ -51,13 +51,17 @@ class Generator
         $this->writer = new \XMLWriter();
 
         if ($this->settings->getOutputFile() !== null && $this->settings->getReturnResultYMLString()) {
-            throw new \LogicException('Only one destination need to be used ReturnResultYMLString or OutputFile');
+            throw new \LogicException(
+                'Only one destination need to be used ReturnResultYMLString or OutputFile'
+            );
         }
 
         if ($this->settings->getReturnResultYMLString()) {
             $this->writer->openMemory();
         } else {
-            $this->tmpFile = $this->settings->getOutputFile() !== null ? \tempnam(\sys_get_temp_dir(), 'YMLGenerator') : 'php://output';
+            $this->tmpFile = $this->settings->getOutputFile() !== null
+                ? \tempnam(\sys_get_temp_dir(), 'YMLGenerator')
+                : 'php://output';
             $this->writer->openURI($this->tmpFile);
         }
 
@@ -65,69 +69,35 @@ class Generator
             $this->writer->setIndentString($this->settings->getIndentString());
             $this->writer->setIndent(true);
         }
-    }
 
-    /**
-     * @param ShopInfo $shopInfo
-     * @param array    $currencies
-     * @param array    $categories
-     * @param array    $offers
-     * @param array    $deliveries
-     *
-     * @return bool
-     */
-    public function generate(ShopInfo $shopInfo, array $currencies, array $categories, array $offers, array $deliveries = [])
-    {
         try {
             $this->addHeader();
+        } catch (\Exception $exception) {
+            $this->throwException($exception);
+        }
+    }
 
-            $this->addShopInfo($shopInfo);
-            $this->addCurrencies($currencies);
-            $this->addCategories($categories);
-
-            if (\count($deliveries) !== 0) {
-                $this->addDeliveries($deliveries);
-            }
-
-            $this->addOffers($offers);
+    public function finish()
+    {
+        try {
             $this->addFooter();
 
             if ($this->settings->getReturnResultYMLString()) {
                 return $this->writer->flush();
             }
 
-            if (null !== $this->settings->getOutputFile()) {
+            if ($this->settings->getOutputFile() !== null) {
                 \copy($this->tmpFile, $this->settings->getOutputFile());
                 @\unlink($this->tmpFile);
             }
 
             return true;
+
         } catch (\Exception $exception) {
-            throw new \RuntimeException(\sprintf('Problem with generating YML file: %s', $exception->getMessage()), 0, $exception);
+            $this->throwException($exception);
         }
-    }
 
-    /**
-     * Add document header
-     */
-    protected function addHeader()
-    {
-        $this->writer->startDocument('1.0', $this->settings->getEncoding());
-        $this->writer->startDTD('yml_catalog', null, 'shops.dtd');
-        $this->writer->endDTD();
-        $this->writer->startElement('yml_catalog');
-        $this->writer->writeAttribute('date', \date('Y-m-d H:i'));
-        $this->writer->startElement('shop');
-    }
-
-    /**
-     * Add document footer
-     */
-    protected function addFooter()
-    {
-        $this->writer->fullEndElement();
-        $this->writer->fullEndElement();
-        $this->writer->endDocument();
+        return false;
     }
 
     /**
@@ -135,19 +105,23 @@ class Generator
      *
      * @param ShopInfo $shopInfo
      */
-    protected function addShopInfo(ShopInfo $shopInfo)
+    public function addShopInfo(ShopInfo $shopInfo)
     {
-        foreach ($shopInfo->toArray() as $name => $value) {
-            if ($value !== null) {
-                $this->writer->writeElement($name, $value);
+        try {
+            foreach ($shopInfo->toArray() as $name => $value) {
+                if ($value !== null) {
+                    $this->writer->writeElement($name, $value);
+                }
             }
+        } catch (\Exception $exception) {
+            $this->throwException($exception);
         }
     }
 
     /**
      * @param Currency $currency
      */
-    protected function addCurrency(Currency $currency)
+    public function addCurrency(Currency $currency)
     {
         $this->writer->startElement('currency');
         $this->writer->writeAttribute('id', $currency->getId());
@@ -158,7 +132,7 @@ class Generator
     /**
      * @param Category $category
      */
-    protected function addCategory(Category $category)
+    public function addCategory(Category $category)
     {
         $this->writer->startElement('category');
         $this->writer->writeAttribute('id', $category->getId());
@@ -180,7 +154,7 @@ class Generator
     /**
      * @param Delivery $delivery
      */
-    protected function addDelivery(Delivery $delivery)
+    public function addDelivery(Delivery $delivery)
     {
         $this->writer->startElement('option');
         $this->writer->writeAttribute('cost', $delivery->getCost());
@@ -194,7 +168,7 @@ class Generator
     /**
      * @param OfferInterface $offer
      */
-    protected function addOffer(OfferInterface $offer)
+    public function addOffer(OfferInterface $offer)
     {
         $this->writer->startElement('offer');
         $this->writer->writeAttribute('id', $offer->getId());
@@ -225,79 +199,70 @@ class Generator
     }
 
     /**
-     * Adds <currencies> element. (See https://yandex.ru/support/webmaster/goods-prices/technical-requirements.xml#currencies)
-     *
-     * @param array $currencies
+     * Adds <currencies> element.
+     * @see https://yandex.ru/support/webmaster/goods-prices/technical-requirements.xml#currencies
      */
-    private function addCurrencies(array $currencies)
+    public function startCurrencies()
     {
         $this->writer->startElement('currencies');
-
-        /** @var Currency $currency */
-        foreach ($currencies as $currency) {
-            if ($currency instanceof Currency) {
-                $this->addCurrency($currency);
-            }
-        }
-
-        $this->writer->fullEndElement();
     }
 
     /**
-     * Adds <categories> element. (See https://yandex.ru/support/webmaster/goods-prices/technical-requirements.xml#categories)
-     *
-     * @param array $categories
+     * Adds <categories> element.
+     * @see https://yandex.ru/support/webmaster/goods-prices/technical-requirements.xml#categories
      */
-    private function addCategories(array $categories)
+    public function startCategories()
     {
         $this->writer->startElement('categories');
-
-        /** @var Category $category */
-        foreach ($categories as $category) {
-            if ($category instanceof Category) {
-                $this->addCategory($category);
-            }
-        }
-
-        $this->writer->fullEndElement();
     }
 
     /**
-     * Adds <delivery-option> element. (See https://yandex.ru/support/partnermarket/elements/delivery-options.xml)
-     *
-     * @param array $deliveries
+     * Adds <delivery-option> element.
+     * @see https://yandex.ru/support/partnermarket/elements/delivery-options.xml
      */
-    private function addDeliveries(array $deliveries)
+    public function startDeliveries()
     {
         $this->writer->startElement('delivery-options');
+    }
 
-        /** @var Delivery $delivery */
-        foreach ($deliveries as $delivery) {
-            if ($delivery instanceof Delivery) {
-                $this->addDelivery($delivery);
-            }
-        }
+    /**
+     * Adds <offers> element.
+     * @see https://yandex.ru/support/webmaster/goods-prices/technical-requirements.xml#offers
+     */
+    public function startOffers()
+    {
+        $this->writer->startElement('offers');
+    }
 
+    /**
+     * Add close tag
+     */
+    public function finishBlock()
+    {
         $this->writer->fullEndElement();
     }
 
     /**
-     * Adds <offers> element. (See https://yandex.ru/support/webmaster/goods-prices/technical-requirements.xml#offers)
-     *
-     * @param array $offers
+     * Add document header
      */
-    private function addOffers(array $offers)
+    protected function addHeader()
     {
-        $this->writer->startElement('offers');
+        $this->writer->startDocument('1.0', $this->settings->getEncoding());
+        $this->writer->startDTD('yml_catalog', null, 'shops.dtd');
+        $this->writer->endDTD();
+        $this->writer->startElement('yml_catalog');
+        $this->writer->writeAttribute('date', \date('Y-m-d H:i'));
+        $this->writer->startElement('shop');
+    }
 
-        /** @var OfferInterface $offer */
-        foreach ($offers as $offer) {
-            if ($offer instanceof OfferInterface) {
-                $this->addOffer($offer);
-            }
-        }
-
+    /**
+     * Add document footer
+     */
+    protected function addFooter()
+    {
         $this->writer->fullEndElement();
+        $this->writer->fullEndElement();
+        $this->writer->endDocument();
     }
 
     /**
@@ -305,9 +270,20 @@ class Generator
      */
     private function addOfferDeliveryOptions(OfferInterface $offer)
     {
-        $options = $offer->getDeliveryOptions();
-        if (!empty($options)) {
-            $this->addDeliveries($options);
+        $deliveries = $offer->getDeliveryOptions();
+
+        if (!empty($deliveries)) {
+
+            $this->startDeliveries();
+
+            /** @var Delivery $delivery */
+            foreach ($deliveries as $delivery) {
+                if ($delivery instanceof Delivery) {
+                    $this->addDelivery($delivery);
+                }
+            }
+
+            $this->finishBlock();
         }
     }
 
@@ -348,7 +324,7 @@ class Generator
 
     /**
      * @param string $name
-     * @param mixed  $value
+     * @param mixed $value
      *
      * @return bool
      */
@@ -360,7 +336,7 @@ class Generator
 
         if ($value instanceof Cdata) {
             $this->writer->startElement($name);
-            $this->writer->writeCdata((string) $value);
+            $this->writer->writeCdata((string)$value);
             $this->writer->endElement();
 
             return true;
@@ -372,5 +348,11 @@ class Generator
         $this->writer->writeElement($name, $value);
 
         return true;
+    }
+
+    private function throwException($exception)
+    {
+        throw new \RuntimeException(\sprintf('Problem with generating YML file: %s',
+            $exception->getMessage()), 0, $exception);
     }
 }
