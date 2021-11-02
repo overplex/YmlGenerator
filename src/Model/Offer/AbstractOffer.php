@@ -84,6 +84,11 @@ abstract class AbstractOffer implements OfferInterface
     private $salesNotes;
 
     /**
+     * @var string
+     */
+    private $manufacturer;
+
+    /**
      * @var bool
      */
     private $manufacturerWarranty;
@@ -134,6 +139,11 @@ abstract class AbstractOffer implements OfferInterface
     private $dimensions;
 
     /**
+     * @var string
+     */
+    private $vat;
+
+    /**
      * @var int
      */
     private $cpa;
@@ -142,6 +152,11 @@ abstract class AbstractOffer implements OfferInterface
      * @var string[]
      */
     private $barcodes;
+
+    /**
+     * @var string
+     */
+    private $barcodesPrepared;
 
     /**
      * @var array
@@ -445,6 +460,26 @@ abstract class AbstractOffer implements OfferInterface
     }
 
     /**
+     * @return string
+     */
+    public function getManufacturer()
+    {
+        return $this->manufacturer;
+    }
+
+    /**
+     * @param string $manufacturer
+     *
+     * @return $this
+     */
+    public function setManufacturer($manufacturer)
+    {
+        $this->manufacturer = $manufacturer;
+
+        return $this;
+    }
+
+    /**
      * @return bool
      */
     public function isManufacturerWarranty()
@@ -673,6 +708,26 @@ abstract class AbstractOffer implements OfferInterface
     }
 
     /**
+     * @return string
+     */
+    public function getVat()
+    {
+        return $this->vat;
+    }
+
+    /**
+     * @param string $vat
+     *
+     * @return $this
+     */
+    public function setVat($vat)
+    {
+        $this->vat = $vat;
+
+        return $this;
+    }
+
+    /**
      * @return int
      */
     public function getCpa()
@@ -755,11 +810,15 @@ abstract class AbstractOffer implements OfferInterface
     /**
      * Get list of barcodes of the offer
      *
-     * @return string[]
+     * @return string
      */
     public function getBarcodes()
     {
-        return $this->barcodes;
+        if ($this->barcodesPrepared !== null) {
+            return $this->barcodesPrepared;
+        }
+
+        return implode(',', $this->barcodes);
     }
 
     /**
@@ -772,6 +831,20 @@ abstract class AbstractOffer implements OfferInterface
     public function setBarcodes(array $barcodes = [])
     {
         $this->barcodes = $barcodes;
+
+        return $this;
+    }
+
+    /**
+     * Set list of barcodes for that offer
+     *
+     * @param string $barcodesPrepared
+     *
+     * @return $this
+     */
+    public function setBarcodesPrepared($barcodesPrepared)
+    {
+        $this->barcodesPrepared = $barcodesPrepared;
 
         return $this;
     }
@@ -936,8 +1009,10 @@ abstract class AbstractOffer implements OfferInterface
             'manufacturer_warranty' => $this->isManufacturerWarranty(),
             'country_of_origin' => $this->getCountryOfOrigin(),
             'downloadable' => $this->isDownloadable(),
+            'manufacturer' => $this->getManufacturer(),
             'adult' => $this->isAdult(),
             'cpa' => $this->getCpa(),
+            'vat' => $this->getVat(),
             'barcode' => $this->getBarcodes(),
         ];
     }
