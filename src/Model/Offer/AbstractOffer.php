@@ -818,7 +818,7 @@ abstract class AbstractOffer implements OfferInterface
             return $this->barcodesPrepared;
         }
 
-        return implode(',', $this->barcodes);
+        return empty($this->barcodes) ? null : implode(',', $this->barcodes);
     }
 
     /**
