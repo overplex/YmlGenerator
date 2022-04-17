@@ -188,7 +188,9 @@ class Generator
         foreach ($offer->toArray() as $name => $value) {
             if (\is_array($value)) {
                 if ($name === 'outlets') {
-                    $this->addOutlets($value);
+                    if (count($value) > 0) {
+                        $this->addOutlets($value);
+                    }
                 } else {
                     foreach ($value as $itemValue) {
                         $this->addOfferElement($name, $itemValue);
