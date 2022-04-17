@@ -35,7 +35,7 @@ Or add this to your `composer.json` file:
 
 ```json
 "require": {
-	"overplex/yml-generator": "dev-master",
+  "overplex/yml-generator": "~1.11.6",
 }
 ```
 
@@ -153,6 +153,31 @@ $yml->finishBlock();
 
 $yml->finish();
 $unbufferedDb->close();
+```
+
+OZON example
+------------
+
+```php
+$yml = new Generator((new Settings())
+    ->setOutputFile('ozon.xml')
+    ->setEncoding('UTF-8')
+    ->hideDtd()
+);
+
+$yml->startOffers();
+
+$offer = new OfferSimple();
+$offer->setId('articul');
+$offer->setPrice(100);
+$offer->setOldPrice(150);
+$offer->setInStock(1000);
+$offer->hideAvailable();
+$yml->addOffer($offer);
+
+$yml->finishBlock();
+
+$yml->finish();
 ```
 
 Copyright / License
