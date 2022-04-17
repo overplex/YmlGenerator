@@ -44,6 +44,13 @@ abstract class AbstractOffer implements OfferInterface
     private $oldPrice;
 
     /**
+     * Min price for OZON
+     *
+     * @var float
+     */
+    private $minPrice;
+
+    /**
      * @var float
      */
     private $purchasePrice;
@@ -179,6 +186,18 @@ abstract class AbstractOffer implements OfferInterface
     private $autoDiscount;
 
     /**
+     * Outlets for OZON
+     *
+     * @var array
+     */
+    private $outlets = [];
+
+    /**
+     * @var bool
+     */
+    protected $showAvailable = true;
+
+    /**
      * Array of custom elements (element types are keys) of arrays of element values
      * There may be multiple elements of the same type
      *
@@ -297,6 +316,69 @@ abstract class AbstractOffer implements OfferInterface
         $this->oldPrice = $oldPrice;
 
         return $this;
+    }
+
+    /**
+     * Return minimum price (only for OZON).
+     *
+     * @return float
+     */
+    public function getMinPrice()
+    {
+        return $this->minPrice;
+    }
+
+    /**
+     * Set minimum price (only for OZON).
+     *
+     * @param float $minPrice
+     *
+     * @return $this
+     */
+    public function setMinPrice($minPrice)
+    {
+        $this->minPrice = $minPrice;
+
+        return $this;
+    }
+
+    /**
+     * Add outlet (only for OZON).
+     *
+     * @param $name
+     * @param $inStock
+     *
+     * @return $this
+     */
+    public function addOutlet($name, $inStock)
+    {
+        $this->outlets[$name] = $inStock;
+
+        return $this;
+    }
+
+    /**
+     * Add only one outlet without name (only for OZON).
+     *
+     * @param $inStock
+     *
+     * @return $this
+     */
+    public function setInStock($inStock)
+    {
+        $this->outlets[''] = $inStock;
+
+        return $this;
+    }
+
+    /**
+     * Return outlets (only for OZON).
+     *
+     * @return array
+     */
+    public function getOutlets()
+    {
+        return $this->outlets;
     }
 
     /**
@@ -697,9 +779,9 @@ abstract class AbstractOffer implements OfferInterface
     public function setDimensions($length, $width, $height)
     {
         $dimensions = [
-            \round((float) $length, 3),
-            \round((float) $width, 3),
-            \round((float) $height, 3),
+            \round((float)$length, 3),
+            \round((float)$width, 3),
+            \round((float)$height, 3),
         ];
 
         $this->dimensions = \implode('/', $dimensions);
@@ -882,7 +964,7 @@ abstract class AbstractOffer implements OfferInterface
      * Multiple elements of the same type are supported
      *
      * @param string $elementType
-     * @param mixed  $value
+     * @param mixed $value
      *
      * @return $this
      */
@@ -966,6 +1048,24 @@ abstract class AbstractOffer implements OfferInterface
     }
 
     /**
+     * @return $this
+     */
+    public function hideAvailable()
+    {
+        $this->showAvailable = false;
+
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getShowAvailable()
+    {
+        return $this->showAvailable;
+    }
+
+    /**
      * @return array
      */
     abstract protected function getOptions();
@@ -979,6 +1079,7 @@ abstract class AbstractOffer implements OfferInterface
                 'url' => $this->getUrl(),
                 'price' => $this->getPrice(),
                 'oldprice' => $this->getOldPrice(),
+                'min_price' => $this->getMinPrice(),
                 'purchase_price' => $this->getPurchasePrice(),
                 'currencyId' => $this->getCurrencyId(),
                 'categoryId' => \array_merge(
@@ -995,6 +1096,7 @@ abstract class AbstractOffer implements OfferInterface
                 'dimensions' => $this->getDimensions(),
                 'name' => $this->getName(),
                 'enable_auto_discounts' => $this->getAutoDiscount(),
+                'outlets' => $this->getOutlets(),
             ] + $this->getCustomElements();
     }
 

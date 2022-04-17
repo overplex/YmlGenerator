@@ -46,6 +46,11 @@ class Settings
     protected $indentString = "\t";
 
     /**
+     * @var bool
+     */
+    protected $addDtd = true;
+
+    /**
      * @return string
      */
     public function getEncoding()
@@ -123,5 +128,25 @@ class Settings
     public function getReturnResultYMLString()
     {
         return $this->returnResultYMLString;
+    }
+
+    /**
+     * Hide DTD
+     *
+     * @return Settings
+     */
+    public function hideDtd()
+    {
+        $this->addDtd = false;
+
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getAddDtd()
+    {
+        return $this->addDtd;
     }
 }

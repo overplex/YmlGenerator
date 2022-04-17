@@ -172,7 +172,10 @@ class Generator
     {
         $this->writer->startElement('offer');
         $this->writer->writeAttribute('id', $offer->getId());
-        $this->writer->writeAttribute('available', $offer->isAvailable() ? 'true' : 'false');
+
+        if ($offer->getShowAvailable()) {
+            $this->writer->writeAttribute('available', $offer->isAvailable() ? 'true' : 'false');
+        }
 
         if ($offer->getType() !== null) {
             $this->writer->writeAttribute('type', $offer->getType());
@@ -184,8 +187,12 @@ class Generator
 
         foreach ($offer->toArray() as $name => $value) {
             if (\is_array($value)) {
-                foreach ($value as $itemValue) {
-                    $this->addOfferElement($name, $itemValue);
+                if ($name === 'outlets') {
+                    $this->addOutlets($value);
+                } else {
+                    foreach ($value as $itemValue) {
+                        $this->addOfferElement($name, $itemValue);
+                    }
                 }
             } else {
                 $this->addOfferElement($name, $value);
@@ -242,14 +249,41 @@ class Generator
         $this->writer->fullEndElement();
     }
 
+    protected function addOutlets($outlets)
+    {
+        $this->writer->startElement('outlets');
+
+        foreach ($outlets as $name => $inStock) {
+            $this->addOutlet($name, $inStock);
+        }
+
+        $this->writer->fullEndElement();
+    }
+
+    protected function addOutlet($name, $inStock)
+    {
+        $this->writer->startElement('outlet');
+        $this->writer->writeAttribute('instock', $inStock);
+
+        if (!empty($name)) {
+            $this->writer->writeAttribute('warehouse_name', $name);
+        }
+
+        $this->writer->fullEndElement();
+    }
+
     /**
      * Add document header
      */
     protected function addHeader()
     {
         $this->writer->startDocument('1.0', $this->settings->getEncoding());
-        $this->writer->startDTD('yml_catalog', null, 'shops.dtd');
-        $this->writer->endDTD();
+
+        if ($this->settings->getAddDtd()) {
+            $this->writer->startDTD('yml_catalog', null, 'shops.dtd');
+            $this->writer->endDTD();
+        }
+
         $this->writer->startElement('yml_catalog');
         $this->writer->writeAttribute('date', \date('Y-m-d H:i'));
         $this->writer->startElement('shop');

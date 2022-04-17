@@ -32,6 +32,16 @@ interface OfferInterface
     public function isAvailable();
 
     /**
+     * @return $this
+     */
+    public function hideAvailable();
+
+    /**
+     * @return bool
+     */
+    public function getShowAvailable();
+
+    /**
      * @return array
      */
     public function getDeliveryOptions();

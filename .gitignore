@@ -3,3 +3,5 @@
 phpunit.xml
 coverage.xml
 composer.lock
+ozon.xml
+.idea
