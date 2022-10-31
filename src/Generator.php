@@ -286,8 +286,12 @@ class Generator
             $this->writer->endDTD();
         }
 
+        $dateTime = new \DateTime();
+        $dateTime->setTimezone(new \DateTimeZone($this->settings->getTimezone()));
+        $date = $dateTime->format($this->settings->getDateFormat());
+
         $this->writer->startElement('yml_catalog');
-        $this->writer->writeAttribute('date', \date('Y-m-d H:i'));
+        $this->writer->writeAttribute('date', $date);
         $this->writer->startElement('shop');
     }
 

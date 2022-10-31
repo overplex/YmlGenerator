@@ -17,11 +17,25 @@ namespace Bukashk0zzz\YmlGenerator;
 class Settings
 {
     /**
-     * Xml file encoding
+     * Xml file encoding.
      *
      * @var string
      */
     protected $encoding = 'windows-1251';
+
+    /**
+     * Xml file created date format.
+     *
+     * @var string
+     */
+    protected $dateFormat = 'Y-m-d\TH:iP';
+
+    /**
+     * Xml file timezone for created date format.
+     *
+     * @var string
+     */
+    protected $timezone = 'Europe/Moscow';
 
     /**
      * Output file name. If null 'php://output' is used.
@@ -148,5 +162,41 @@ class Settings
     public function getAddDtd()
     {
         return $this->addDtd;
+    }
+
+    /**
+     * @return Settings
+     */
+    public function setDateFormat($dateFormat)
+    {
+        $this->dateFormat = $dateFormat;
+
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getDateFormat()
+    {
+        return $this->dateFormat;
+    }
+
+    /**
+     * @return Settings
+     */
+    public function setTimezone($timezone)
+    {
+        $this->timezone = $timezone;
+
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getTimezone()
+    {
+        return $this->timezone;
     }
 }
