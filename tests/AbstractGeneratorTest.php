@@ -30,6 +30,11 @@ abstract class AbstractGeneratorTest extends \PHPUnit_Framework_TestCase
     protected $faker;
 
     /**
+     * @var Generator
+     */
+    protected $yml;
+
+    /**
      * @var Settings
      */
     protected $settings;
@@ -67,6 +72,7 @@ abstract class AbstractGeneratorTest extends \PHPUnit_Framework_TestCase
         $this->faker = Faker::create();
 
         $this->settings = $this->createSettings();
+        $this->yml = new Generator($this->settings);
         $this->shopInfo = $this->createShopInfo();
         $this->currencies = $this->createCurrencies();
         $this->categories = $this->createCategories();
@@ -83,13 +89,33 @@ abstract class AbstractGeneratorTest extends \PHPUnit_Framework_TestCase
      */
     protected function generateFile()
     {
-        static::assertTrue((new Generator($this->settings))->generate(
-            $this->shopInfo,
-            $this->currencies,
-            $this->categories,
-            $this->createOffers(),
-            $this->deliveries
-        ));
+        $this->yml->addShopInfo($this->shopInfo);
+
+        $this->yml->startCurrencies();
+        foreach ($this->currencies as $currency) {
+            $this->yml->addCurrency($currency);
+        }
+        $this->yml->finishBlock();
+
+        $this->yml->startCategories();
+        foreach ($this->categories as $category) {
+            $this->yml->addCategory($category);
+        }
+        $this->yml->finishBlock();
+
+        $this->yml->startOffers();
+        foreach ($this->createOffers() as $offer) {
+            $this->yml->addOffer($offer);
+        }
+        $this->yml->finishBlock();
+
+        $this->yml->startDeliveries();
+        foreach ($this->deliveries as $delivery) {
+            $this->yml->addDelivery($delivery);
+        }
+        $this->yml->finishBlock();
+
+        $this->yml->finish();
     }
 
     /**
@@ -135,8 +161,7 @@ abstract class AbstractGeneratorTest extends \PHPUnit_Framework_TestCase
                 ->setMarketCategory($this->faker->word)
                 ->setCpa($this->faker->numberBetween(0, 1))
                 ->setBarcodes([$this->faker->ean13, $this->faker->ean13])
-                ->setAutoDiscount($this->faker->boolean)
-            ;
+                ->setAutoDiscount($this->faker->boolean);
         }
 
         return $offers;
@@ -147,7 +172,7 @@ abstract class AbstractGeneratorTest extends \PHPUnit_Framework_TestCase
      */
     private function validateFileWithDtd()
     {
-        $systemId = 'data://text/plain;base64,'.\base64_encode(\file_get_contents(__DIR__.'/dtd/'.$this->offerType.'.dtd'));
+        $systemId = 'data://text/plain;base64,' . \base64_encode(\file_get_contents(__DIR__ . '/dtd/' . $this->offerType . '.dtd'));
         $root = 'yml_catalog';
 
         $ymlFile = new \DOMDocument();
@@ -172,13 +197,12 @@ abstract class AbstractGeneratorTest extends \PHPUnit_Framework_TestCase
     /**
      * @return Settings
      */
-    private function createSettings()
+    protected function createSettings()
     {
         return (new Settings())
             ->setOutputFile(\tempnam(\sys_get_temp_dir(), 'YMLGeneratorTest'))
             ->setEncoding('utf-8')
-            ->setIndentString("\t")
-        ;
+            ->setIndentString("\t");
     }
 
     /**
@@ -194,8 +218,7 @@ abstract class AbstractGeneratorTest extends \PHPUnit_Framework_TestCase
             ->setVersion($this->faker->numberBetween(1, 999))
             ->setAgency($this->faker->name)
             ->setEmail($this->faker->email)
-            ->setAutoDiscount($this->faker->boolean)
-        ;
+            ->setAutoDiscount($this->faker->boolean);
     }
 
     /**
@@ -206,8 +229,7 @@ abstract class AbstractGeneratorTest extends \PHPUnit_Framework_TestCase
         $currencies = [];
         $currencies[] = (new Currency())
             ->setId('UAH')
-            ->setRate(1)
-        ;
+            ->setRate(1);
 
         return $currencies;
     }
@@ -220,14 +242,12 @@ abstract class AbstractGeneratorTest extends \PHPUnit_Framework_TestCase
         $categories = [];
         $categories[] = (new Category())
             ->setId(1)
-            ->setName($this->faker->name)
-        ;
+            ->setName($this->faker->name);
 
         $categories[] = (new Category())
             ->setId(2)
             ->setParentId(1)
-            ->setName($this->faker->name)
-        ;
+            ->setName($this->faker->name);
 
         return $categories;
     }

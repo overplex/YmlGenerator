@@ -12,6 +12,7 @@
 namespace Bukashk0zzz\YmlGenerator\Tests;
 
 use Bukashk0zzz\YmlGenerator\Model\Offer\OfferSimple;
+use Bukashk0zzz\YmlGenerator\Settings;
 
 /**
  * Generator test
@@ -27,6 +28,14 @@ class OfferSimpleGeneratorTest extends AbstractGeneratorTest
         $this->runGeneratorTest();
     }
 
+    protected function createSettings()
+    {
+        return (new Settings())
+            ->setOutputFile('offer-simple.xml')
+            ->setEncoding('utf-8')
+            ->setIndentString("\t");
+    }
+
     /**
      * {@inheritdoc}
      */
@@ -37,6 +46,7 @@ class OfferSimpleGeneratorTest extends AbstractGeneratorTest
             ->setVendor($this->faker->company)
             ->setVendorCode(null)
             ->setPickup(true)
+            ->setCount($this->faker->numberBetween(1, 9999))
             ->setGroupId($this->faker->numberBetween())
             ->addPicture('http://example.com/example.jpeg')
             ->addBarcode($this->faker->ean13)

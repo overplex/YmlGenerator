@@ -4,4 +4,5 @@ phpunit.xml
 coverage.xml
 composer.lock
 ozon.xml
+offer-simple.xml
 .idea

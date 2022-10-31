@@ -122,6 +122,7 @@ foreach ($this->getProductsQuery()->each(50, $unbufferedDb) as $product) {
     $offer->setAvailable($product->in_stock);
     $offer->setVendorCode($product->articul);
     $offer->setCurrencyId('RUR');
+    $offer->setCount($product->stock);
     $offer->setWeight($product->weight);
     $offer->setDimensions($product->depth, $product->width, $product->height);
     $offer->setDescription(new CData($this->formatDescription($product->text)));
