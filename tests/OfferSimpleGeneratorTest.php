@@ -47,6 +47,7 @@ class OfferSimpleGeneratorTest extends AbstractGeneratorTest
             ->setVendorCode(null)
             ->setPickup(true)
             ->setCount($this->faker->numberBetween(1, 9999))
+            ->setDisabled($this->faker->boolean)
             ->setGroupId($this->faker->numberBetween())
             ->addPicture('http://example.com/example.jpeg')
             ->addBarcode($this->faker->ean13)

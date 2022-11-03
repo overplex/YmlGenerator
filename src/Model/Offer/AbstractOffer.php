@@ -151,6 +151,11 @@ abstract class AbstractOffer implements OfferInterface
     private $count;
 
     /**
+     * @var bool
+     */
+    private $disabled;
+
+    /**
      * @var string
      */
     private $vat;
@@ -787,6 +792,26 @@ abstract class AbstractOffer implements OfferInterface
     }
 
     /**
+     * @return bool
+     */
+    public function isDisabled()
+    {
+        return $this->disabled;
+    }
+
+    /**
+     * @param bool $disabled
+     *
+     * @return $this
+     */
+    public function setDisabled($disabled)
+    {
+        $this->disabled = $disabled;
+
+        return $this;
+    }
+
+    /**
      * @return string
      */
     public function getDimensions()
@@ -1119,6 +1144,7 @@ abstract class AbstractOffer implements OfferInterface
                 'local_delivery_cost' => $this->getLocalDeliveryCost(),
                 'weight' => $this->getWeight(),
                 'count' => $this->getCount(),
+                'disabled' => $this->isDisabled(),
                 'dimensions' => $this->getDimensions(),
                 'name' => $this->getName(),
                 'enable_auto_discounts' => $this->getAutoDiscount(),
